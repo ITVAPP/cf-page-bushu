@@ -4,38 +4,43 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch:  # 支持在 GitHub Actions 页面手动触发重新部署
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        account: ['account_1']  # 可扩展多个账户
+        account: ['account_1']  # 若未来需扩展多个账户，可在此添加
     permissions:
-      contents: read
-      deployments: write
+      contents: read  # 仅需读取仓库权限
 
     env:
-      account_1_api_token: 'TXDn4V-iYDFDz7iso02xmH2qP12VqAIexPrh2539'  # 您的全新 Token
-      account_1_account_id: '79927cfd3333c7b3e2363958a2d58158'
-      account_1_project_name: 'zipv-7700foxm'
+      ACCOUNT_1_API_TOKEN: 'TXDn4V-iYDFDz7iso02xmH2qP12VqAIexPrh2539'  # 直接硬编码您的 API Token
+      ACCOUNT_1_ACCOUNT_ID: '79927cfd3333c7b3e2363958a2d58158'       # 直接硬编码您的 Account ID
+      ACCOUNT_1_PROJECT_NAME: 'zipv-7700foxm'                        # 项目名称
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 如需构建静态文件（如 npm run build），请在此添加步骤
+      # 如需构建静态文件（例如 Vite、Hugo、Next.js 等），请在此取消注释并调整命令
       # - run: npm install && npm run build
+      # - run: yarn install && yarn build
 
       - name: Deploy to Cloudflare Pages
-        uses: andykenward/github-actions-cloudflare-pages@v3.0.0
+        uses: cloudflare/wrangler-action@v3
         with:
-          cloudflare-api-token: ${{ 
-            matrix.account == 'account_1' && env.account_1_api_token }}
-          cloudflare-account-id: ${{ 
-            matrix.account == 'account_1' && env.account_1_account_id }}
-          cloudflare-project-name: ${{ 
-            matrix.account == 'account_1' && env.account_1_project_name }}
-          directory: .  # 上传目录（静态文件根目录）；若构建输出为 dist 等，请修改为此目录
-          github-token: ${{ secrets.GITHUB_TOKEN }}  # 可选，用于 GitHub 部署状态更新
+          apiToken: ${{ 
+            matrix.account == 'account_1' && env.ACCOUNT_1_API_TOKEN }}
+          accountId: ${{ 
+            matrix.account == 'account_1' && env.ACCOUNT_1_ACCOUNT_ID }}
+          command: pages deploy . --project-name=${{ env.ACCOUNT_1_PROJECT_NAME }}
+          # . 表示当前目录为构建输出目录
+          # 若您的静态文件输出在 dist、build 等子目录，请改为：pages deploy dist --project-name=...
+
+      # 可选：输出部署 URL，便于在 Actions 日志中快速查看
+      - name: Print deployment URL
+        if: success()
+        run: |
+          echo "部署成功！预览地址：https://${{ env.ACCOUNT_1_PROJECT_NAME }}.pages.dev"
