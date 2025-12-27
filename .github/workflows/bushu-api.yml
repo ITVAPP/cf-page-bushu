@@ -8,25 +8,21 @@ on:
         type: string
 
 jobs:
-  cleanup:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       actions: write
-      contents: read
+      contents: read 
     steps:
       - name: Delete old workflow runs
+        continue-on-error: true
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
           retain_days: 1
           keep_minimum_runs: 3
-
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
+      
       - name: Checkout
         uses: actions/checkout@v4
       
@@ -71,6 +67,7 @@ jobs:
             export CLOUDFLARE_API_TOKEN="$API_TOKEN"
             export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
             
+            # 将完整输出保存到临时日志文件，用于后续判断
             LOG_FILE="/tmp/deploy_$(date +%s).log"
             wrangler pages deploy . --project-name="$PROJECT_NAME" --branch=main > "$LOG_FILE" 2>&1
             
@@ -87,9 +84,6 @@ jobs:
             
             rm -f "$LOG_FILE"
             
-            # 移除固定 sleep 3 延迟
-            # Wrangler CLI 内置了 API 速率限制处理和自动重试机制
-            # 串行部署不存在并发冲突，此延迟为不必要的时间浪费
           done <<< "$CONFIGS"
           
           echo "📊 成功: $SUCCESS | 失败: $FAILED"
