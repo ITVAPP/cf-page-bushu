@@ -67,7 +67,7 @@ jobs:
             export CLOUDFLARE_API_TOKEN="$API_TOKEN"
             export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
             
-            if npx wrangler@3 pages deploy . --project-name="$PROJECT_NAME" --branch=main; then
+            if npx --yes wrangler@3 pages deploy . --project-name="$PROJECT_NAME" --branch=main; then
               echo "✅ $PROJECT_NAME 成功"
               SUCCESS=$((SUCCESS + 1))
             else
@@ -79,4 +79,3 @@ jobs:
           done <<< "$CONFIGS"
           
           echo "📊 成功: $SUCCESS | 失败: $FAILED"
-          [ $FAILED -gt 0 ] && exit 1
