@@ -45,7 +45,8 @@ jobs:
         env:
           DEPLOY_CONFIGS: ${{ steps.parse.outputs.configs }}
         run: |
-          sudo apt-get update && sudo apt-get install -y jq
+          # 静默更新源并安装 jq（隐藏所有 Get/Hit 输出）
+          sudo apt-get update -qq > /dev/null 2>&1 && sudo apt-get install -y jq
           
           CONFIGS=$(echo "$DEPLOY_CONFIGS" | jq -c '.[]')
           TOTAL=$(echo "$DEPLOY_CONFIGS" | jq '. | length')
@@ -67,15 +68,33 @@ jobs:
             export CLOUDFLARE_API_TOKEN="$API_TOKEN"
             export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
             
-            if npx --yes wrangler@3 pages deploy . --project-name="$PROJECT_NAME" --branch=main; then
+            # 使用 --yes 避免交互提示
+            # 将完整输出保存到临时日志文件，用于后续判断
+            LOG_FILE="/tmp/deploy_$(date +%s).log"
+            npx --yes wrangler@3 pages deploy . --project-name="$PROJECT_NAME" --branch=main > "$LOG_FILE" 2>&1
+            
+            # 检查日志中是否包含部署成功的标志
+            if grep -q "Deployment complete" "$LOG_FILE"; then
               echo "✅ $PROJECT_NAME 成功"
               SUCCESS=$((SUCCESS + 1))
+              # 可选：显示简要成功信息（避免显示过多警告）
+              grep "Deployment complete" "$LOG_FILE"
             else
               echo "❌ $PROJECT_NAME 失败"
+              cat "$LOG_FILE"  # 输出详细错误日志便于排查
               FAILED=$((FAILED + 1))
             fi
+            
+            rm -f "$LOG_FILE"
             
             [ $CURRENT -lt $TOTAL ] && sleep 3
           done <<< "$CONFIGS"
           
           echo "📊 成功: $SUCCESS | 失败: $FAILED"
+          
+          # 只有真正失败时才退出码 1
+          if [ $FAILED -gt 0 ]; then
+            exit 1
+          else
+            exit 0
+          fi
