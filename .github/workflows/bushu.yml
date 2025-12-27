@@ -34,6 +34,7 @@ jobs:
           apiToken: ${{ secrets[matrix.api_token_secret] }}
           accountId: ${{ secrets[matrix.account_id_secret] }}
           command: pages deploy . --project-name=${{ matrix.project_name }}
+          preCommands: npm install -g wrangler@latest  # 强制安装最新版 Wrangler 以避免兼容性问题
           # . 表示当前目录为构建输出目录
           # 若您的静态文件输出在 dist、build 等子目录，请改为：pages deploy dist --project-name=...
 
