@@ -14,10 +14,10 @@ jobs:
         account: ['account_1']  # 可扩展多个账户
     permissions:
       contents: read
-      deployments: write  # 支持 GitHub 部署状态
+      deployments: write
 
     env:
-      account_1_api_key: '86a7ca4973c0a901d1b7dd4cbb24fe1d64718'
+      account_1_api_token: 'TXDn4V-iYDFDz7iso02xmH2qP12VqAIexPrh2539'  # 您的全新 Token
       account_1_account_id: '79927cfd3333c7b3e2363958a2d58158'
       account_1_project_name: 'zipv-7700foxm'
 
@@ -25,14 +25,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 如需构建静态文件，可在此添加步骤，例如：
+      # 如需构建静态文件（如 npm run build），请在此添加步骤
       # - run: npm install && npm run build
 
       - name: Deploy to Cloudflare Pages
         uses: andykenward/github-actions-cloudflare-pages@v3.0.0
         with:
-          cloudflare-api-token: ${{ env.account_1_api_key }}
-          cloudflare-account-id: ${{ env.account_1_account_id }}
-          cloudflare-project-name: ${{ env.account_1_project_name }}
-          directory: .  # 上传当前目录（静态文件根目录）；若有构建输出目录，如 dist，请改为 dist
-          github-token: ${{ secrets.GITHUB_TOKEN }}  # 可选，用于 GitHub 部署跟踪（需仓库权限）
+          cloudflare-api-token: ${{ 
+            matrix.account == 'account_1' && env.account_1_api_token }}
+          cloudflare-account-id: ${{ 
+            matrix.account == 'account_1' && env.account_1_account_id }}
+          cloudflare-project-name: ${{ 
+            matrix.account == 'account_1' && env.account_1_project_name }}
+          directory: .  # 上传目录（静态文件根目录）；若构建输出为 dist 等，请修改为此目录
+          github-token: ${{ secrets.GITHUB_TOKEN }}  # 可选，用于 GitHub 部署状态更新
