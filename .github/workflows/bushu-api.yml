@@ -24,7 +24,6 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    needs: cleanup
     permissions:
       contents: read
     steps:
@@ -40,6 +39,10 @@ jobs:
           else
             echo "configs=[$CONFIGS]" >> $GITHUB_OUTPUT
           fi
+      
+      # 预安装 Wrangler CLI，避免循环内重复 npx 检查
+      - name: Install Wrangler
+        run: npm install -g wrangler@3
       
       - name: Deploy
         env:
@@ -68,16 +71,13 @@ jobs:
             export CLOUDFLARE_API_TOKEN="$API_TOKEN"
             export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
             
-            # 使用 --yes 避免交互提示
-            # 将完整输出保存到临时日志文件，用于后续判断
             LOG_FILE="/tmp/deploy_$(date +%s).log"
-            npx --yes wrangler@3 pages deploy . --project-name="$PROJECT_NAME" --branch=main > "$LOG_FILE" 2>&1
+            wrangler pages deploy . --project-name="$PROJECT_NAME" --branch=main > "$LOG_FILE" 2>&1
             
             # 检查日志中是否包含部署成功的标志
             if grep -q "Deployment complete" "$LOG_FILE"; then
               echo "✅ $PROJECT_NAME 成功"
               SUCCESS=$((SUCCESS + 1))
-              # 可选：显示简要成功信息（避免显示过多警告）
               grep "Deployment complete" "$LOG_FILE"
             else
               echo "❌ $PROJECT_NAME 失败"
@@ -87,7 +87,9 @@ jobs:
             
             rm -f "$LOG_FILE"
             
-            [ $CURRENT -lt $TOTAL ] && sleep 3
+            # 移除固定 sleep 3 延迟
+            # Wrangler CLI 内置了 API 速率限制处理和自动重试机制
+            # 串行部署不存在并发冲突，此延迟为不必要的时间浪费
           done <<< "$CONFIGS"
           
           echo "📊 成功: $SUCCESS | 失败: $FAILED"
