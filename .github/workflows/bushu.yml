@@ -8,10 +8,10 @@ jobs:
       matrix:
         include:
           - account: account_1
-            api_token: 'TXDn4V-iYDFDz7iso02xmH2qP12VqAIexPrh2539' # 直接硬编码您的 API Token，或使用 ${{ secrets.ACCOUNT_1_API_TOKEN }}
-            account_id: '79927cfd3333c7b3e2363958a2d58158' # 直接硬编码您的 Account ID，或使用 ${{ secrets.ACCOUNT_1_ACCOUNT_ID }}
+            api_token: 'TXDn4V-iYDFDz7iso02xmH2qP12VqAIexPrh2539'
+            account_id: '79927cfd3333c7b3e2363958a2d58158'
             project_name: 'zipv-7700foxm' # 项目名称
-          # 若需添加更多账户，请在此追加类似对象，例如：
+          # 若需添加更多账户,请在此追加类似对象,例如:
           # - account: account_2
           #   api_token: '您的第二个API Token'
           #   account_id: '您的第二个Account ID'
@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      # 如需构建静态文件（例如 Vite、Hugo、Next.js 等），请在此取消注释并调整命令
+      # 如需构建静态文件(例如 Vite、Hugo、Next.js 等),请在此取消注释并调整命令
       # - run: npm install && npm run build
       # - run: yarn install && yarn build
       - name: Deploy to Cloudflare Pages
@@ -31,9 +31,8 @@ jobs:
           accountId: ${{ matrix.account_id }}
           command: pages deploy . --project-name=${{ matrix.project_name }}
           # . 表示当前目录为构建输出目录
-          # 若您的静态文件输出在 dist、build 等子目录，请改为：pages deploy dist --project-name=...
-      # 可选：输出部署 URL，便于在 Actions 日志中快速查看
+          # 若您的静态文件输出在 dist、build 等子目录,请改为:pages deploy dist --project-name=...
+      # 可选:输出部署 URL,便于在 Actions 日志中快速查看
       - name: Print deployment URL
-        if: success()
         run: |
-          echo "部署成功！预览地址：https://${{ matrix.project_name }}.pages.dev"
+          echo "部署成功!预览地址:https://${{ matrix.project_name }}.pages.dev"
