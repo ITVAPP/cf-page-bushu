@@ -1,0 +1,47 @@
+name: Cloudflare Pages Deploy
+
+on:
+  push:
+    branches:
+      - main  # 当推送到主分支时触发部署
+  workflow_dispatch:  # 允许手动触发部署
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        account: ['account_1']  # 用简单的标识符表示每个账户
+    env:
+      # 配置多个账户的信息
+      account_1_email: 'wwb7700@foxmail.com'
+      account_1_api_key: '86a7ca4973c0a901d1b7dd4cbb24fe1d64718'
+      account_1_account_id: '79927cfd3333c7b3e2363958a2d58158'
+      account_1_project_name: 'zipv-7700foxm'
+      
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Deploy to Cloudflare Pages
+        run: |
+          # 根据 matrix 中的 account 选择正确的环境变量
+          if [ "${{ matrix.account }}" == "account_1" ]; then
+            ACCOUNT_EMAIL=${{ env.account_1_email }}
+            ACCOUNT_API_KEY=${{ env.account_1_api_key }}
+            ACCOUNT_ID=${{ env.account_1_account_id }}
+            PROJECT_NAME=${{ env.account_1_project_name }}
+          elif [ "${{ matrix.account }}" == "account_2" ]; then
+            ACCOUNT_EMAIL=${{ env.account_2_email }}
+            ACCOUNT_API_KEY=${{ env.account_2_api_key }}
+            ACCOUNT_ID=${{ env.account_2_account_id }}
+            PROJECT_NAME=${{ env.account_2_project_name }}
+          fi
+
+          echo "Deploying ${PROJECT_NAME} to account ${ACCOUNT_EMAIL}..."
+
+          curl -X POST "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/${PROJECT_NAME}/deployments" \
+            -H "Authorization: Bearer ${ACCOUNT_API_KEY}" \
+            -H "Content-Type: application/json"
+
