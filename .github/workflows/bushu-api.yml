@@ -1,0 +1,82 @@
+name: Cloudflare Pages Deploy Api
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_configs:
+        description: '部署配置JSON'
+        required: true
+        type: string
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 1
+          keep_minimum_runs: 3
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: cleanup
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Parse configs
+        id: parse
+        run: |
+          CONFIGS='${{ github.event.inputs.deploy_configs }}'
+          if [[ "$CONFIGS" == \[* ]]; then
+            echo "configs=$CONFIGS" >> $GITHUB_OUTPUT
+          else
+            echo "configs=[$CONFIGS]" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Deploy
+        env:
+          DEPLOY_CONFIGS: ${{ steps.parse.outputs.configs }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+          
+          CONFIGS=$(echo "$DEPLOY_CONFIGS" | jq -c '.[]')
+          TOTAL=$(echo "$DEPLOY_CONFIGS" | jq '. | length')
+          CURRENT=0
+          SUCCESS=0
+          FAILED=0
+          
+          echo "🚀 将部署 $TOTAL 个项目"
+          
+          while IFS= read -r config; do
+            CURRENT=$((CURRENT + 1))
+            
+            API_TOKEN=$(echo "$config" | jq -r '.apiToken')
+            ACCOUNT_ID=$(echo "$config" | jq -r '.accountId')
+            PROJECT_NAME=$(echo "$config" | jq -r '.projectName')
+            
+            echo "[$CURRENT/$TOTAL] 部署: $PROJECT_NAME"
+            
+            export CLOUDFLARE_API_TOKEN="$API_TOKEN"
+            export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
+            
+            if npx wrangler@3 pages deploy . --project-name="$PROJECT_NAME" --branch=main; then
+              echo "✅ $PROJECT_NAME 成功"
+              SUCCESS=$((SUCCESS + 1))
+            else
+              echo "❌ $PROJECT_NAME 失败"
+              FAILED=$((FAILED + 1))
+            fi
+            
+            [ $CURRENT -lt $TOTAL ] && sleep 3
+          done <<< "$CONFIGS"
+          
+          echo "📊 成功: $SUCCESS | 失败: $FAILED"
+          [ $FAILED -gt 0 ] && exit 1
