@@ -11,38 +11,28 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        account: ['account_1']  # 可扩展为 ['account_1', 'account_2'] 等
+        account: ['account_1']  # 可扩展多个账户
     permissions:
       contents: read
-      deployments: write
+      deployments: write  # 支持 GitHub 部署状态
 
     env:
-      # 账户1 配置（明文放置，如您要求）
       account_1_api_key: '86a7ca4973c0a901d1b7dd4cbb24fe1d64718'
-      account_1_email: 'wwb7700@foxmail.com'  # 若需使用 API Key 认证时可能用到
       account_1_account_id: '79927cfd3333c7b3e2363958a2d58158'
       account_1_project_name: 'zipv-7700foxm'
-
-      # 如需添加账户2，可在此继续添加 env 变量
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ 
-            matrix.account == 'account_1' && env.account_1_api_key }}
-          accountId: ${{ 
-            matrix.account == 'account_1' && env.account_1_account_id }}
-          command: pages deploy . --project-name=${{ 
-            matrix.account == 'account_1' && env.account_1_project_name }}
+      # 如需构建静态文件，可在此添加步骤，例如：
+      # - run: npm install && npm run build
 
-# 说明：
-# - 若您的项目为静态站点，直接上传当前目录（.），无需额外构建步骤。
-# - 如需先构建（如 npm run build），可在部署步骤前添加：
-#   - run: npm install && npm run build
-# - 若项目需指定构建输出目录，可修改 command 为：pages deploy dist --project-name=...
-# - 对于 Git 集成项目，此方式将触发 Direct Upload 部署（覆盖生产环境）。
-# - 多账户扩展示例：添加 matrix.account: ['account_1', 'account_2'] 并补充相应 env 变量及条件表达式。
+      - name: Deploy to Cloudflare Pages
+        uses: andykenward/github-actions-cloudflare-pages@v3.0.0
+        with:
+          cloudflare-api-token: ${{ env.account_1_api_key }}
+          cloudflare-account-id: ${{ env.account_1_account_id }}
+          cloudflare-project-name: ${{ env.account_1_project_name }}
+          directory: .  # 上传当前目录（静态文件根目录）；若有构建输出目录，如 dist，请改为 dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}  # 可选，用于 GitHub 部署跟踪（需仓库权限）
