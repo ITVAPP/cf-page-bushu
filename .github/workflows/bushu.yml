@@ -2,11 +2,6 @@ name: Cloudflare Pages Deploy
 
 on:
   workflow_dispatch:  # 仅支持手动触发重新部署
-    inputs:
-      account:
-        description: '要部署的账户（留空部署所有）'
-        required: false
-        default: 'all'
 
 jobs:
   deploy:
@@ -23,7 +18,6 @@ jobs:
           #   api_token_secret: 'ACCOUNT_2_API_TOKEN'
           #   account_id_secret: 'ACCOUNT_2_ACCOUNT_ID'
           #   project_name: 'another-project'
-    if: ${{ inputs.account == 'all' || inputs.account == matrix.account }}
     permissions:
       contents: read  # 仅需读取仓库权限
     steps:
