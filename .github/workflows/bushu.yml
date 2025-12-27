@@ -23,7 +23,7 @@ jobs:
           #   api_token_secret: 'ACCOUNT_2_API_TOKEN'
           #   account_id_secret: 'ACCOUNT_2_ACCOUNT_ID'
           #   project_name: 'another-project'
-    if: ${{ github.event.inputs.account == 'all' || github.event.inputs.account == matrix.account }}
+    if: ${{ inputs.account == 'all' || inputs.account == matrix.account }}
     permissions:
       contents: read  # 仅需读取仓库权限
     steps:
